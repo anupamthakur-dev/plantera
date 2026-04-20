@@ -1,11 +1,18 @@
 import { useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { useAuth } from '../auth'
 import { createPlantPost } from '../../services/planting'
 import { plantPostSchema, type PlantPostFormValues } from './post.schema'
 
-const DEFAULT_FORM_VALUES: PlantPostFormValues = {
+type PlantPostFormInput = Omit<z.input<typeof plantPostSchema>, 'lat' | 'lng'> & {
+  lat: number
+  lng: number
+}
+type PlantPostFormOutput = z.output<typeof plantPostSchema>
+
+const DEFAULT_FORM_VALUES: PlantPostFormInput = {
   name: '',
   type: 'tree',
   lat: 0,
@@ -32,8 +39,8 @@ export function useCreatePlantPost(options?: UseCreatePlantPostOptions) {
     }
   }, [options?.initialValues])
 
-  const form = useForm<PlantPostFormValues>({
-    resolver: zodResolver(plantPostSchema),
+  const form = useForm<PlantPostFormInput, unknown, PlantPostFormOutput>({
+    resolver: zodResolver(plantPostSchema) as unknown as ReturnType<typeof zodResolver<PlantPostFormInput, unknown, PlantPostFormOutput>>,
     defaultValues,
     mode: 'onTouched',
   })

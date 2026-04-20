@@ -288,7 +288,6 @@ export function PlantImageViewerModal({
               ].join(' ')}
               style={{
                 transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
-                WebkitUserDrag: 'none',
               }}
             />
           </div>

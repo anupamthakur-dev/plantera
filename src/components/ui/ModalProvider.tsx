@@ -2,12 +2,14 @@ import { createContext, lazy, type ReactNode, Suspense, useCallback, useMemo, us
 
 const PostModal = lazy(() => import('../../features/post/PostModal'))
 
-export enum ModalType {
-  POST_PLANT = 'POST_PLANT',
-  VIEW_POST = 'VIEW_POST',
-  PROFILE = 'PROFILE',
-  SETTINGS = 'SETTINGS',
-}
+export const ModalType = {
+  POST_PLANT: 'POST_PLANT',
+  VIEW_POST: 'VIEW_POST',
+  PROFILE: 'PROFILE',
+  SETTINGS: 'SETTINGS',
+} as const
+
+export type ModalType = (typeof ModalType)[keyof typeof ModalType]
 
 type ModalData = Record<string, unknown> | null
 
