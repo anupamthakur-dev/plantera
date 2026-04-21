@@ -172,6 +172,47 @@ export default function LandingPage() {
           </div>
         </article>
       </article>
+
+      <footer className="border-t border-[rgba(28,35,16,0.15)] bg-[rgba(255,255,255,0.72)] px-6 py-8 backdrop-blur-sm md:px-12">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-5 text-center">
+          <img src="/planteraIcon.svg" alt="Plantera" className="w-20 sm:w-24" />
+
+          <div className="max-w-3xl space-y-2 text-xs leading-relaxed text-[var(--text-secondary)]">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--earth-green-700)]">
+              Attributions
+            </h4>
+            <p>
+              <a
+                href="https://skfb.ly/oBuSv"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-[var(--earth-green-700)] transition hover:text-[var(--earth-green-900)]"
+              >
+                Low Poly Planet Earth
+              </a>{' '}
+              by Jacobs Development is licensed under{' '}
+              <a
+                href="http://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-[var(--earth-green-700)] transition hover:text-[var(--earth-green-900)]"
+              >
+                Creative Commons Attribution
+              </a>
+              .
+            </p>
+          </div>
+
+          <a
+            href="https://linkedin.com/in/anupam-thakur"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-semibold text-[var(--earth-green-700)] transition hover:text-[var(--earth-green-900)]"
+          >
+            Made with ❤️ by Anupam
+          </a>
+        </div>
+      </footer>
     </main>
   )
 }

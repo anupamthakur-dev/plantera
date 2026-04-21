@@ -31,6 +31,7 @@ type UseGlobePlantsInput = {
   pov: Pick<GlobePointOfView, 'lat' | 'lng'>
   zoomLevel: ZoomLevel
   isMobilePerformanceMode?: boolean
+  isPaused?: boolean
 }
 
 const NORMALIZED_TEMPLATE_HEIGHT = 1
@@ -175,7 +176,7 @@ function resolveModelPath(type: PlantType): string {
   return getPlantModel(type)
 }
 
-export function useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode = false }: UseGlobePlantsInput) {
+export function useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode = false, isPaused = false }: UseGlobePlantsInput) {
   const [plants, setPlants] = useState<PlantedPlant[]>(() => (isSupabaseConfigured ? [] : plantedPlantsDummyData))
   const [loadedTypes, setLoadedTypes] = useState<Set<PlantType>>(new Set())
   const [modelRevision, setModelRevision] = useState(0)
@@ -224,6 +225,11 @@ export function useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode = false
   const fetchViewport = useMemo(() => expandViewport(viewport, zoomLevel), [viewport, zoomLevel])
 
   useEffect(() => {
+    if (isPaused) {
+      setLoadingStatus('')
+      return
+    }
+
     if (!isSupabaseConfigured) return
 
     const cacheKey = getViewportCacheKey(fetchViewport, zoomLevel)
@@ -262,7 +268,7 @@ export function useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode = false
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [fetchViewport, isMobilePerformanceMode, zoomLevel])
+  }, [fetchViewport, isMobilePerformanceMode, isPaused, zoomLevel])
 
   const visiblePlantTypes = useMemo(() => {
     return Array.from(new Set(plants.map((plant) => plant.type)))

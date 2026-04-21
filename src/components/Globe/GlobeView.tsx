@@ -10,6 +10,7 @@ import { useMobilePerformanceMode } from './useMobilePerformanceMode'
 import { PlantSidebar } from './PlantSidebar'
 import { useAuth } from '../../features/auth'
 import { fetchPlantSidebarData, type PlantSidebarData } from '../../services/planting'
+import { useModal } from '../../hooks/useModal'
 import type { ClusteredPlantedPlant } from './plants'
 import type {
   AreaFeature,
@@ -111,14 +112,16 @@ function GlobeView() {
   const [sidebarData, setSidebarData] = useState<PlantSidebarData | null>(null)
   const sidebarRequestIdRef = useRef(0)
   const isMobilePerformanceMode = useMobilePerformanceMode()
-  const { zoomLevel, pov } = useGlobeZoom(globeRef, isMobilePerformanceMode)
+  const { modalType } = useModal()
+  const isModalOpen = Boolean(modalType)
+  const { zoomLevel, pov } = useGlobeZoom(globeRef, isMobilePerformanceMode, isModalOpen)
   const { user } = useAuth()
   const {
     visiblePlants,
     objectThreeObject,
     isPlantModelReady,
     loadingStatus: plantLoadingStatus,
-  } = useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode })
+  } = useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode, isPaused: isModalOpen })
   const deferredZoomLevel = useDeferredValue(zoomLevel)
   const userAvatarUrl = ((user?.user_metadata?.avatar_url as string | undefined)
     || (user?.user_metadata?.picture as string | undefined)
@@ -130,6 +133,17 @@ function GlobeView() {
     || user?.email?.split('@')[0]
     || 'Plantera User')
     .trim()
+
+  useEffect(() => {
+    const globe = globeRef.current
+    if (!globe) return
+
+    if (isModalOpen) {
+      globe.pauseAnimation?.()
+    } else {
+      globe.resumeAnimation?.()
+    }
+  }, [isModalOpen])
 
   useEffect(() => {
     const container = containerRef.current

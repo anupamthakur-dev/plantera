@@ -37,6 +37,7 @@ export type GlobeControls = {
   dampingFactor: number
   rotateSpeed: number
   zoomSpeed: number
+  enabled: boolean
   autoRotate: boolean
   autoRotateSpeed: number
   minDistance: number
@@ -54,6 +55,8 @@ type GlobeRenderer = {
 
 export type GlobeHandle = {
   controls: () => GlobeControls
+  pauseAnimation?: () => void
+  resumeAnimation?: () => void
   scene?: () => {
     add: (object: unknown) => void
     remove: (object: unknown) => void

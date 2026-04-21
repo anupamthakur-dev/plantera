@@ -26,6 +26,7 @@ function resolveZoomLevel(altitude: number): ZoomLevel {
 export function useGlobeZoom(
   globeRef: RefObject<GlobeHandle | null>,
   isMobilePerformanceMode = false,
+  isPaused = false,
 ) {
   const [altitude, setAltitude] = useState<number>(1.5)
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('medium')
@@ -47,6 +48,16 @@ export function useGlobeZoom(
   }, [zoomLevel])
 
   useEffect(() => {
+    if (isPaused) {
+      const globe = globeRef.current
+      if (globe) {
+        const controls = globe.controls()
+        controls.enabled = false
+      }
+
+      return
+    }
+
     let cancelled = false
     let rafId = 0
     let teardown: (() => void) | null = null
@@ -61,6 +72,7 @@ export function useGlobeZoom(
       }
 
       const controls = globe.controls()
+      controls.enabled = true
       let pendingZoomLevel = zoomLevelRef.current
       let zoomDebounceTimer: ReturnType<typeof setTimeout> | null = null
       let cameraDebounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -150,8 +162,13 @@ export function useGlobeZoom(
       cancelled = true
       cancelAnimationFrame(rafId)
       teardown?.()
+
+      const globe = globeRef.current
+      if (globe && isPaused) {
+        globe.controls().enabled = false
+      }
     }
-  }, [globeRef, isMobilePerformanceMode])
+  }, [globeRef, isMobilePerformanceMode, isPaused])
 
   return { zoomLevel, altitude, pov }
 }
