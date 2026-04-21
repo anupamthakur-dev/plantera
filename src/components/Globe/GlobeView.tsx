@@ -5,6 +5,7 @@ import { feature as topojsonFeature } from 'topojson-client'
 import type { FeatureCollection, Geometry } from 'geojson'
 import { useGlobeZoom } from './useGlobeZoom'
 import { useGlobePlants } from './useGlobePlants'
+import { useMobilePerformanceMode } from './useMobilePerformanceMode'
 import { PlantSidebar } from './PlantSidebar'
 import { useAuth } from '../../features/auth'
 import { fetchPlantSidebarData, type PlantSidebarData } from '../../services/planting'
@@ -13,14 +14,15 @@ import type {
   AreaFeature,
   City,
   GlobeHandle,
-  StateCollection,
   ZoomLevel,
 } from '../../types/globe'
 
 const COUNTRIES_TOPO_URL =
   'https://unpkg.com/world-atlas@2/countries-110m.json'
 const STATES_GEOJSON_URL =
-  'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson'
+  'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson'
+const STATES_GEOJSON_FALLBACK_URL =
+  'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_1_states_provinces.geojson'
 
 const COUNTRY_FILL_COLOR = 'rgb(69, 177, 108)'
 const STATE_FILL_COLOR = 'rgb(69, 177, 108)'
@@ -33,6 +35,10 @@ const MEDIUM_STATE_LIMIT = 80
 const CLOSE_STATE_LIMIT = 140
 const MEDIUM_STATE_DISTANCE = 16
 const CLOSE_STATE_DISTANCE = 20
+const MOBILE_MEDIUM_STATE_LIMIT = 28
+const MOBILE_CLOSE_STATE_LIMIT = 44
+const MOBILE_MEDIUM_STATE_DISTANCE = 12
+const MOBILE_CLOSE_STATE_DISTANCE = 14
 const SOLID_GLOBE_IMAGE_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 1024"><rect width="2048" height="1024" fill="#4FA3E3"/></svg>',
 )}`
@@ -70,6 +76,19 @@ const DEFAULT_AVATAR_DATA_URI = `data:image/svg+xml;charset=utf-8,${encodeURICom
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#74d8b1"/><stop offset="1" stop-color="#2f8f6f"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#g)"/><circle cx="32" cy="24" r="10" fill="#e9fff4"/><path d="M14 54c2-9 10-15 18-15s16 6 18 15" fill="#e9fff4"/></svg>',
 )}`
 
+const CITY_FALLBACK_DATA: City[] = [
+  { id: 'delhi', name: 'Delhi', country: 'India', state: 'Delhi', lat: 28.6139, lng: 77.209, population: 32900000 },
+  { id: 'mumbai', name: 'Mumbai', country: 'India', state: 'Maharashtra', lat: 19.076, lng: 72.8777, population: 21600000 },
+  { id: 'bengaluru', name: 'Bengaluru', country: 'India', state: 'Karnataka', lat: 12.9716, lng: 77.5946, population: 13600000 },
+  { id: 'dehradun', name: 'Dehradun', country: 'India', state: 'Uttarakhand', lat: 30.3165, lng: 78.0322, population: 1100000 },
+  { id: 'london', name: 'London', country: 'United Kingdom', state: 'England', lat: 51.5072, lng: -0.1276, population: 9648000 },
+  { id: 'new-york', name: 'New York', country: 'United States', state: 'New York', lat: 40.7128, lng: -74.006, population: 18800000 },
+  { id: 'sao-paulo', name: 'Sao Paulo', country: 'Brazil', state: 'Sao Paulo', lat: -23.5558, lng: -46.6396, population: 22400000 },
+  { id: 'lagos', name: 'Lagos', country: 'Nigeria', state: 'Lagos', lat: 6.5244, lng: 3.3792, population: 15300000 },
+  { id: 'tokyo', name: 'Tokyo', country: 'Japan', state: 'Tokyo', lat: 35.6762, lng: 139.6503, population: 37200000 },
+  { id: 'sydney', name: 'Sydney', country: 'Australia', state: 'New South Wales', lat: -33.8688, lng: 151.2093, population: 5360000 },
+]
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -84,6 +103,7 @@ function GlobeView() {
   const globeRef = useRef<GlobeHandle | null>(null)
   const hasInitializedViewRef = useRef(false)
   const statesLoadingRef = useRef(false)
+  const hasZoomedToUserRef = useRef(false)
   const [globeSize, setGlobeSize] = useState({ width: 0, height: 0 })
   const [countries, setCountries] = useState<AreaFeature[]>([])
   const [states, setStates] = useState<AreaFeature[]>([])
@@ -96,7 +116,8 @@ function GlobeView() {
   const [sidebarError, setSidebarError] = useState('')
   const [sidebarData, setSidebarData] = useState<PlantSidebarData | null>(null)
   const sidebarRequestIdRef = useRef(0)
-  const { zoomLevel, altitude, pov } = useGlobeZoom(globeRef)
+  const isMobilePerformanceMode = useMobilePerformanceMode()
+  const { zoomLevel, altitude, pov } = useGlobeZoom(globeRef, isMobilePerformanceMode)
   const { user, signOut } = useAuth()
   const {
     plants,
@@ -105,7 +126,7 @@ function GlobeView() {
     isPlantModelReady,
     loadedPlantTypes,
     loadingStatus: plantLoadingStatus,
-  } = useGlobePlants({ pov, zoomLevel })
+  } = useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode })
   const deferredZoomLevel = useDeferredValue(zoomLevel)
 
   useEffect(() => {
@@ -183,32 +204,6 @@ function GlobeView() {
     const defaultPov = { lat: 15, lng: 10, altitude: 1.5 }
     globeRef.current.pointOfView(defaultPov, 0)
 
-    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (!globeRef.current) return
-
-          globeRef.current.pointOfView(
-            {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              altitude: CLOSE_ALTITUDE,
-            },
-            1400,
-          )
-        },
-        () => {
-          if (!globeRef.current) return
-          globeRef.current.pointOfView(defaultPov, 0)
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 6000,
-          maximumAge: 300000,
-        },
-      )
-    }
-
     const controls = globeRef.current.controls()
     controls.enableDamping = true
     controls.dampingFactor = 0.1
@@ -221,7 +216,40 @@ function GlobeView() {
   }, [globeSize.height, globeSize.width])
 
   useEffect(() => {
-    if (states.length || statesLoadingRef.current) return;
+    if (!globeRef.current || !countries.length || hasZoomedToUserRef.current) return
+    hasZoomedToUserRef.current = true
+
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (!globeRef.current) return
+
+          globeRef.current.pointOfView(
+            {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              altitude: CLOSE_ALTITUDE,
+            },
+            1600,
+          )
+        },
+        () => {
+          if (!globeRef.current) return
+          const defaultPov = { lat: 15, lng: 10, altitude: 1.5 }
+          globeRef.current.pointOfView(defaultPov, 500)
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 8000,
+          maximumAge: 300000,
+        },
+      )
+    }
+  }, [countries.length])
+
+  useEffect(() => {
+    if (zoomLevel === 'far') return
+    if (states.length || statesLoadingRef.current) return
 
     let cancelled = false
     statesLoadingRef.current = true
@@ -232,42 +260,41 @@ function GlobeView() {
       try {
         const response = await fetch(STATES_GEOJSON_URL)
         if (!response.ok) {
-          throw new Error(`State boundary request failed with status ${response.status}`)
+          throw new Error(`Primary state boundary request failed with status ${response.status}`)
         }
 
-        const stateCollection =
-          (await response.json()) as FeatureCollection<Geometry>
-
+        const stateCollection = (await response.json()) as FeatureCollection<Geometry>
         if (!Array.isArray(stateCollection.features) || stateCollection.features.length === 0) {
-          throw new Error('Remote state boundary payload did not include features')
+          throw new Error('Primary remote state boundary payload did not include features')
         }
 
         startTransition(() => {
           setStates(stateCollection.features as AreaFeature[])
           setOverlayLoadingStatus('')
         })
-        
+
       } catch (error) {
         try {
-          const module = await import('../../data/states.json')
-
-          if (!cancelled) {
-            const fallbackStates = module.default as StateCollection
-
-            if (!Array.isArray(fallbackStates.features) || fallbackStates.features.length === 0) {
-              throw new Error('Fallback state dataset is empty')
-            }
-
-            startTransition(() => {
-              setStates(fallbackStates.features)
-              setOverlayLoadingStatus('')
-            })
+          const response = await fetch(STATES_GEOJSON_FALLBACK_URL)
+          if (!response.ok) {
+            throw new Error(`Fallback state boundary request failed with status ${response.status}`)
           }
+
+          const stateCollection = (await response.json()) as FeatureCollection<Geometry>
+          if (!Array.isArray(stateCollection.features) || stateCollection.features.length === 0) {
+            throw new Error('Fallback remote state boundary payload did not include features')
+          }
+
+          if (cancelled) return
+
+          startTransition(() => {
+            setStates(stateCollection.features as AreaFeature[])
+            setOverlayLoadingStatus('')
+          })
         } catch (fallbackError) {
           if (!cancelled) {
             setOverlayLoadingStatus('Could not load state boundaries')
           }
-
           console.error(fallbackError)
         }
 
@@ -282,28 +309,27 @@ function GlobeView() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [states.length, zoomLevel])
 
   useEffect(() => {
-    if (zoomLevel !== 'close' || cities.length) return
+    if (isMobilePerformanceMode || zoomLevel !== 'close' || cities.length) return
 
     let cancelled = false
 
-    const loadCities = async () => {
-      const module = await import('../../data/cities.json')
+    const loadCities = () => {
       if (!cancelled) {
         startTransition(() => {
-          setCities(module.default as City[])
+          setCities(CITY_FALLBACK_DATA)
         })
       }
     }
 
-     loadCities()
+    loadCities()
 
     return () => {
       cancelled = true
     }
-  }, [zoomLevel, cities.length])
+  }, [zoomLevel, cities.length, isMobilePerformanceMode])
 
   const stateCentroids = useMemo(() => {
     return states.map((feature) => {
@@ -319,8 +345,12 @@ function GlobeView() {
   const visibleStates = useMemo<AreaFeature[]>(() => {
     if (!states.length) return []
 
-    const maxDistance = deferredZoomLevel === 'close' ? CLOSE_STATE_DISTANCE : MEDIUM_STATE_DISTANCE
-    const maxStates = deferredZoomLevel === 'close' ? CLOSE_STATE_LIMIT : MEDIUM_STATE_LIMIT
+    const maxDistance = deferredZoomLevel === 'close'
+      ? (isMobilePerformanceMode ? MOBILE_CLOSE_STATE_DISTANCE : CLOSE_STATE_DISTANCE)
+      : (isMobilePerformanceMode ? MOBILE_MEDIUM_STATE_DISTANCE : MEDIUM_STATE_DISTANCE)
+    const maxStates = deferredZoomLevel === 'close'
+      ? (isMobilePerformanceMode ? MOBILE_CLOSE_STATE_LIMIT : CLOSE_STATE_LIMIT)
+      : (isMobilePerformanceMode ? MOBILE_MEDIUM_STATE_LIMIT : MEDIUM_STATE_LIMIT)
     const distances = stateCentroids
       .map((entry) => ({
         feature: entry.feature,
@@ -338,12 +368,12 @@ function GlobeView() {
     }
 
     return distances.slice(0, Math.min(300, maxStates)).map((entry) => entry.feature)
-  }, [deferredZoomLevel, pov.lat, pov.lng, stateCentroids, states.length])
+  }, [deferredZoomLevel, isMobilePerformanceMode, pov.lat, pov.lng, stateCentroids, states.length])
 
   const activePolygons = useMemo<AreaFeature[]>(() => {
     if (deferredZoomLevel === 'far') return countries
     if (states.length === 0) return countries
-   
+
     return [...countries, ...visibleStates]
   }, [countries, deferredZoomLevel, states.length, visibleStates])
 
@@ -408,10 +438,10 @@ function GlobeView() {
 
     const [lng, lat] = geoCentroid(area)
     const nextAltitude = zoomLevel === 'far' ? 1.35 : 0.78
-  
+
 
     setSelectedAreaId(getAreaId(area))
-    
+
     globeRef.current.pointOfView({ lat, lng, altitude: nextAltitude }, 1200)
   }, [zoomLevel])
 
@@ -477,20 +507,38 @@ function GlobeView() {
     setIsSidebarOpen(false)
   }, [])
 
-  const polygonTransitionDuration = deferredZoomLevel === 'far' ? COUNTRY_POLYGON_TRANSITION_MS : DENSE_POLYGON_TRANSITION_MS
+  const polygonTransitionDuration =
+    isMobilePerformanceMode
+      ? DENSE_POLYGON_TRANSITION_MS
+      : deferredZoomLevel === 'far'
+        ? COUNTRY_POLYGON_TRANSITION_MS
+        : DENSE_POLYGON_TRANSITION_MS
+
+  const isGlobeReady = countries.length > 0 && isPlantModelReady
 
   return (
     <section ref={containerRef} className="relative h-full min-h-[320px] w-full overflow-hidden">
-      {globeSize.width > 0 && globeSize.height > 0 ? (
+      {!isGlobeReady ? (
+        <div className="flex h-full items-center justify-center bg-slate-950">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-400"></div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-slate-300">Loading Plantera Globe</p>
+              <p className="mt-1 text-xs text-slate-400">{overlayLoadingStatus || 'Preparing the world...'}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {globeSize.width > 0 && globeSize.height > 0 && isGlobeReady ? (
         <Globe
           ref={globeRef}
           width={globeSize.width}
           height={globeSize.height}
           globeImageUrl={SOLID_GLOBE_IMAGE_URL}
           backgroundColor="#01182900"
-          showAtmosphere
+          showAtmosphere={!isMobilePerformanceMode}
           atmosphereColor="#67e8f9"
-          atmosphereAltitude={0.22}
+          atmosphereAltitude={isMobilePerformanceMode ? 0.12 : 0.22}
           polygonsData={activePolygons}
           polygonCapColor={polygonCapColor}
           polygonSideColor={polygonSideColor}
@@ -500,7 +548,7 @@ function GlobeView() {
           polygonLabel={polygonLabel}
           onPolygonHover={handlePolygonHover}
           onPolygonClick={handlePolygonClick}
-          pointsData={deferredZoomLevel === 'close' ? cities : []}
+          pointsData={deferredZoomLevel === 'close' && !isMobilePerformanceMode ? cities : []}
           pointLat="lat"
           pointLng="lng"
           pointAltitude={0.008}
@@ -518,15 +566,20 @@ function GlobeView() {
         />
       ) : null}
 
-      <PlantSidebar
+      {isGlobeReady && (
+        <>
+          <PlantSidebar
         open={isSidebarOpen}
         loading={isSidebarLoading}
         errorMessage={sidebarError}
         data={sidebarData}
         onClose={handleSidebarClose}
       />
+        </>
+      )}
 
-      <div className="pointer-events-none absolute left-4 top-4 rounded-md border border-zinc-700/80 bg-zinc-900/75 px-4 py-3 text-xs tracking-wide text-zinc-200 shadow-lg shadow-cyan-500/10 backdrop-blur-sm sm:left-6 sm:top-6">
+      {isGlobeReady && (
+        <div className="pointer-events-none absolute left-4 top-4 rounded-md border border-zinc-700/80 bg-zinc-900/75 px-4 py-3 text-xs tracking-wide text-zinc-200 shadow-lg shadow-cyan-500/10 backdrop-blur-sm sm:left-6 sm:top-6">
         <div className="mb-1 font-semibold uppercase text-cyan-300">
           Plantera Globe
         </div>
@@ -543,9 +596,10 @@ function GlobeView() {
         {overlayLoadingStatus ? (
           <div className="text-cyan-300">{overlayLoadingStatus}</div>
         ) : null}
-      </div>
+        </div>
+      )}
 
-      {user ? (
+      {isGlobeReady && user && (
         <div className="absolute right-4 top-4 rounded-md border border-emerald-500/30 bg-emerald-950/70 px-4 py-3 text-xs tracking-wide text-emerald-100 shadow-lg shadow-emerald-500/10 backdrop-blur-sm sm:right-6 sm:top-6">
           <div className="font-semibold uppercase text-emerald-300">Signed In</div>
           <div className="mt-1 max-w-[220px] truncate">{user.email}</div>
@@ -559,7 +613,7 @@ function GlobeView() {
             Sign out
           </button>
         </div>
-      ) : null}
+      )}
     </section>
   )
 }

@@ -30,6 +30,7 @@ type AddPlantInput = {
 type UseGlobePlantsInput = {
   pov: Pick<GlobePointOfView, 'lat' | 'lng'>
   zoomLevel: ZoomLevel
+  isMobilePerformanceMode?: boolean
 }
 
 const NORMALIZED_TEMPLATE_HEIGHT = 1
@@ -42,9 +43,26 @@ const VIEWPORT_OVERSCAN_BY_ZOOM: Record<ZoomLevel, number> = {
   close: 0.12,
 }
 const FETCH_DEBOUNCE_MS_BY_ZOOM: Record<ZoomLevel, number> = {
+  far: 160,
+  medium: 140,
+  close: 100,
+}
+const FETCH_DEBOUNCE_MS_BY_ZOOM_MOBILE: Record<ZoomLevel, number> = {
+  far: 280,
+  medium: 240,
+  close: 180,
+}
+const PLANT_CLUSTER_PRECISION_DESKTOP = 5
+const PLANT_CLUSTER_PRECISION_MOBILE = 4
+const MAX_VISIBLE_PLANTS_DESKTOP: Record<ZoomLevel, number> = {
   far: 260,
-  medium: 220,
-  close: 160,
+  medium: 180,
+  close: 120,
+}
+const MAX_VISIBLE_PLANTS_MOBILE: Record<ZoomLevel, number> = {
+  far: 96,
+  medium: 72,
+  close: 56,
 }
 
 function getZoomScaleMultiplier(zoomLevel: ZoomLevel): number {
@@ -157,7 +175,7 @@ function resolveModelPath(type: PlantType): string {
   return getPlantModel(type)
 }
 
-export function useGlobePlants({ pov, zoomLevel }: UseGlobePlantsInput) {
+export function useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode = false }: UseGlobePlantsInput) {
   const [plants, setPlants] = useState<PlantedPlant[]>(() => (isSupabaseConfigured ? [] : plantedPlantsDummyData))
   const [loadedTypes, setLoadedTypes] = useState<Set<PlantType>>(new Set())
   const [modelRevision, setModelRevision] = useState(0)
@@ -238,13 +256,13 @@ export function useGlobePlants({ pov, zoomLevel }: UseGlobePlantsInput) {
           setPlants([])
           setLoadingStatus('Could not load planted plants')
         })
-    }, FETCH_DEBOUNCE_MS_BY_ZOOM[zoomLevel])
+    }, isMobilePerformanceMode ? FETCH_DEBOUNCE_MS_BY_ZOOM_MOBILE[zoomLevel] : FETCH_DEBOUNCE_MS_BY_ZOOM[zoomLevel])
 
     return () => {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [fetchViewport, zoomLevel])
+  }, [fetchViewport, isMobilePerformanceMode, zoomLevel])
 
   const visiblePlantTypes = useMemo(() => {
     return Array.from(new Set(plants.map((plant) => plant.type)))
@@ -259,8 +277,16 @@ export function useGlobePlants({ pov, zoomLevel }: UseGlobePlantsInput) {
   const visiblePlants = useMemo<ClusteredPlantedPlant[]>(() => {
     const viewport = getViewportFromPov(pov, zoomLevel)
     const viewportPlants = filterVisiblePlants(plants, viewport)
-    return collapsePlantsByCoordinate(viewportPlants, 5)
-  }, [plants, pov, zoomLevel])
+    const clusteredPlants = collapsePlantsByCoordinate(
+      viewportPlants,
+      isMobilePerformanceMode ? PLANT_CLUSTER_PRECISION_MOBILE : PLANT_CLUSTER_PRECISION_DESKTOP,
+    )
+    const maxVisible = isMobilePerformanceMode
+      ? MAX_VISIBLE_PLANTS_MOBILE[zoomLevel]
+      : MAX_VISIBLE_PLANTS_DESKTOP[zoomLevel]
+
+    return clusteredPlants.slice(0, maxVisible)
+  }, [isMobilePerformanceMode, plants, pov, zoomLevel])
 
   const renderablePlants = useMemo<RenderablePlant[]>(() => {
     return renderPlants(visiblePlants)

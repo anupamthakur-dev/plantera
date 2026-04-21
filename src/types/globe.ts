@@ -41,10 +41,24 @@ export type GlobeControls = {
   autoRotateSpeed: number
   minDistance: number
   maxDistance: number
+  addEventListener: (event: 'change', listener: () => void) => void
+  removeEventListener: (event: 'change', listener: () => void) => void
+}
+
+type GlobeRenderer = {
+  setPixelRatio: (value: number) => void
+  shadowMap: {
+    enabled: boolean
+  }
 }
 
 export type GlobeHandle = {
   controls: () => GlobeControls
+  scene?: () => {
+    add: (object: unknown) => void
+    remove: (object: unknown) => void
+  }
+  renderer?: () => GlobeRenderer
   pointOfView: {
     (): Partial<GlobePointOfView>
     (pov: GlobePointOfView, ms?: number): void

@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { startTransition, useEffect, useRef, useState, type RefObject } from 'react'
 import type { GlobeHandle, ZoomLevel } from '../../types/globe'
 
 const FAR_THRESHOLD = 1.9
 const MEDIUM_THRESHOLD = 1.1
-const ZOOM_DEBOUNCE_MS = 220
-const POV_SAMPLE_MS = 160
-const ALTITUDE_DELTA_THRESHOLD = 0.02
-const POV_DELTA_THRESHOLD = 0.25
+const DESKTOP_ZOOM_DEBOUNCE_MS = 220
+const MOBILE_ZOOM_DEBOUNCE_MS = 360
+const DESKTOP_POV_SAMPLE_MS = 160
+const MOBILE_POV_SAMPLE_MS = 340
+const DESKTOP_ALTITUDE_DELTA_THRESHOLD = 0.02
+const MOBILE_ALTITUDE_DELTA_THRESHOLD = 0.04
+const DESKTOP_POV_DELTA_THRESHOLD = 0.25
+const MOBILE_POV_DELTA_THRESHOLD = 0.6
 
 type GlobePov = {
   lat: number
@@ -19,7 +23,10 @@ function resolveZoomLevel(altitude: number): ZoomLevel {
   return 'close'
 }
 
-export function useGlobeZoom(globeRef: RefObject<GlobeHandle | null>) {
+export function useGlobeZoom(
+  globeRef: RefObject<GlobeHandle | null>,
+  isMobilePerformanceMode = false,
+) {
   const [altitude, setAltitude] = useState<number>(1.5)
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('medium')
   const [pov, setPov] = useState<GlobePov>({ lat: 0, lng: 0 })
@@ -40,64 +47,111 @@ export function useGlobeZoom(globeRef: RefObject<GlobeHandle | null>) {
   }, [zoomLevel])
 
   useEffect(() => {
-    let frameId = 0
-    let lastUpdatedAt = 0
-    let pendingZoomLevel = zoomLevelRef.current
-    let zoomDebounceTimer: ReturnType<typeof setTimeout> | null = null
+    let cancelled = false
+    let rafId = 0
+    let teardown: (() => void) | null = null
 
-    const commitZoomLevel = (nextZoom: ZoomLevel) => {
-      if (pendingZoomLevel === nextZoom) return
-      pendingZoomLevel = nextZoom
+    const attachWhenReady = () => {
+      if (cancelled) return
 
-      if (zoomDebounceTimer) {
-        clearTimeout(zoomDebounceTimer)
+      const globe = globeRef.current
+      if (!globe) {
+        rafId = requestAnimationFrame(attachWhenReady)
+        return
       }
 
-      zoomDebounceTimer = setTimeout(() => {
-        if (zoomLevelRef.current !== nextZoom) {
-          setZoomLevel(nextZoom)
-        }
-      }, ZOOM_DEBOUNCE_MS)
-    }
+      const controls = globe.controls()
+      let pendingZoomLevel = zoomLevelRef.current
+      let zoomDebounceTimer: ReturnType<typeof setTimeout> | null = null
+      let cameraDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
-    const watchZoom = (timestamp: number) => {
-      if (timestamp - lastUpdatedAt > POV_SAMPLE_MS && globeRef.current) {
-        const currentPov = globeRef.current.pointOfView()
-        const currentAltitude = currentPov.altitude ?? 2.5
-        const nextZoom = resolveZoomLevel(currentAltitude)
-        const lat = currentPov.lat ?? 0
-        const lng = currentPov.lng ?? 0
+      const cameraDebounceMs = isMobilePerformanceMode ? 80 : 36
 
-        if (Math.abs(altitudeRef.current - currentAltitude) > ALTITUDE_DELTA_THRESHOLD) {
-          altitudeRef.current = currentAltitude
-          setAltitude(currentAltitude)
+      const commitZoomLevel = (nextZoom: ZoomLevel) => {
+        if (pendingZoomLevel === nextZoom) return
+        pendingZoomLevel = nextZoom
+
+        if (zoomDebounceTimer) {
+          clearTimeout(zoomDebounceTimer)
         }
 
-        if (
-          Math.abs(povRef.current.lat - lat) > POV_DELTA_THRESHOLD ||
-          Math.abs(povRef.current.lng - lng) > POV_DELTA_THRESHOLD
-        ) {
-          const nextPov = { lat, lng }
-          povRef.current = nextPov
-          setPov(nextPov)
-        }
-
-        commitZoomLevel(nextZoom)
-        lastUpdatedAt = timestamp
+        zoomDebounceTimer = setTimeout(() => {
+          if (zoomLevelRef.current !== nextZoom) {
+            startTransition(() => {
+              setZoomLevel(nextZoom)
+            })
+          }
+        }, isMobilePerformanceMode ? MOBILE_ZOOM_DEBOUNCE_MS : DESKTOP_ZOOM_DEBOUNCE_MS)
       }
 
-      frameId = requestAnimationFrame(watchZoom)
+      const syncFromCamera = () => {
+        if (!globeRef.current) return
+
+        const sampleMs = isMobilePerformanceMode ? MOBILE_POV_SAMPLE_MS : DESKTOP_POV_SAMPLE_MS
+        const altitudeThreshold = isMobilePerformanceMode
+          ? MOBILE_ALTITUDE_DELTA_THRESHOLD
+          : DESKTOP_ALTITUDE_DELTA_THRESHOLD
+        const povThreshold = isMobilePerformanceMode
+          ? MOBILE_POV_DELTA_THRESHOLD
+          : DESKTOP_POV_DELTA_THRESHOLD
+
+        if (cameraDebounceTimer) {
+          clearTimeout(cameraDebounceTimer)
+        }
+
+        cameraDebounceTimer = setTimeout(() => {
+          if (!globeRef.current) return
+
+          const currentPov = globeRef.current.pointOfView()
+          const currentAltitude = currentPov.altitude ?? 2.5
+          const nextZoom = resolveZoomLevel(currentAltitude)
+          const lat = currentPov.lat ?? 0
+          const lng = currentPov.lng ?? 0
+
+          if (Math.abs(altitudeRef.current - currentAltitude) > altitudeThreshold) {
+            altitudeRef.current = currentAltitude
+            startTransition(() => {
+              setAltitude(currentAltitude)
+            })
+          }
+
+          if (
+            Math.abs(povRef.current.lat - lat) > povThreshold ||
+            Math.abs(povRef.current.lng - lng) > povThreshold
+          ) {
+            const nextPov = { lat, lng }
+            povRef.current = nextPov
+            startTransition(() => {
+              setPov(nextPov)
+            })
+          }
+
+          commitZoomLevel(nextZoom)
+        }, Math.max(cameraDebounceMs, sampleMs * 0.25))
+      }
+
+      controls.addEventListener('change', syncFromCamera)
+      syncFromCamera()
+
+      teardown = () => {
+        controls.removeEventListener('change', syncFromCamera)
+        if (zoomDebounceTimer) {
+          clearTimeout(zoomDebounceTimer)
+        }
+        if (cameraDebounceTimer) {
+          clearTimeout(cameraDebounceTimer)
+        }
+      }
     }
 
-    frameId = requestAnimationFrame(watchZoom)
+    attachWhenReady()
 
     return () => {
-      cancelAnimationFrame(frameId)
-      if (zoomDebounceTimer) {
-        clearTimeout(zoomDebounceTimer)
-      }
+      cancelled = true
+      cancelAnimationFrame(rafId)
+      teardown?.()
     }
-  }, [globeRef])
+  }, [globeRef, isMobilePerformanceMode])
 
   return { zoomLevel, altitude, pov }
 }
