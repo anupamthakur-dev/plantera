@@ -617,8 +617,16 @@ function GlobeView() {
         </>
       )}
 
+      {isGlobeReady && (
+        <div className="pointer-events-auto absolute left-4 top-4 z-30 sm:left-6 sm:top-6">
+          <Link to="/" aria-label="Plantera Home" className="inline-flex rounded-lg px-4 py-2 bg-[rgba(255,255,255,0.8)] ">
+            <img src="/planteraIcon.svg" alt="Plantera" className="w-24" />
+          </Link>
+        </div>
+      )}
+
       {(overlayLoadingStatus || plantLoadingStatus) && (
-        <div className="pointer-events-none absolute left-4 top-4 text-xs font-medium tracking-wide sm:left-6 sm:top-6">
+        <div className="pointer-events-none absolute bottom-4 left-4 text-xs font-medium tracking-wide sm:bottom-6 sm:left-6">
           {overlayLoadingStatus && (
             <div className="text-cyan-400">{overlayLoadingStatus}</div>
           )}

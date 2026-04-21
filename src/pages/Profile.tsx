@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth, useUser } from '../features/auth'
+import Modal from '../components/ui/Modal'
 import {
   fetchUserProfilePageData,
   type UserProfilePageData,
 } from '../services/planting'
+import ProfileEditModal from '../features/profile/ProfileEditModal'
 
 const DEFAULT_AVATAR_DATA_URI = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#74d8b1"/><stop offset="1" stop-color="#2f8f6f"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#g)"/><circle cx="32" cy="24" r="10" fill="#e9fff4"/><path d="M14 54c2-9 10-15 18-15s16 6 18 15" fill="#e9fff4"/></svg>',
@@ -46,6 +48,7 @@ export default function ProfilePage() {
   }, [routeUserId, user?.id])
 
   const isOwnProfile = Boolean(user?.id && resolvedUserId && user.id === resolvedUserId)
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -167,6 +170,7 @@ export default function ProfilePage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
                 <button
                   type="button"
+                  onClick={() => setIsEditProfileOpen(true)}
                   className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--earth-green-300)_0%,var(--earth-green-500)_52%,var(--earth-green-700)_100%)] px-6 py-2.5 text-sm font-semibold text-[var(--earth-sand-100)] shadow-[0_8px_22px_rgba(53,84,39,0.48)] transition hover:shadow-[0_12px_30px_rgba(53,84,39,0.62)]"
                 >
                   Edit Profile
@@ -224,6 +228,31 @@ export default function ProfilePage() {
           )}
         </section>
       </div>
+
+      <Modal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)}>
+        {profileData ? (
+          <ProfileEditModal
+            userId={profileData.userId}
+            email={profileData.email}
+            initialName={profileData.name}
+            initialAvatarUrl={profileData.avatarUrl}
+            avatarFallbackUrl={DEFAULT_AVATAR_DATA_URI}
+            onClose={() => setIsEditProfileOpen(false)}
+            onSaved={({ name, avatarUrl }) => {
+              setProfileData((current) => {
+                if (!current) return current
+
+                return {
+                  ...current,
+                  name,
+                  avatarUrl,
+                }
+              })
+              setIsEditProfileOpen(false)
+            }}
+          />
+        ) : null}
+      </Modal>
     </main>
   )
 }

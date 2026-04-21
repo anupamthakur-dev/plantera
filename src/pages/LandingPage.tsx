@@ -3,18 +3,29 @@ import RotatingEarth from '../components/Earth/RotatingEarth'
 
 export default function LandingPage() {
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl overflow-x-hidden text-[var(--text-primary)]">
+    <main className="mx-auto min-h-screen w-full  text-[var(--text-primary)]">
+      <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-[rgba(28,35,16,0.12)] bg-[rgba(255, 255, 255, 0.07)] px-6 py-4  backdrop-blur-md sm:px-12">
+        <Link to="/" aria-label="Plantera Home" className="inline-flex ">
+          <img src="/planteraIcon.svg" alt="Plantera" className="w-24 sm:w-26" />
+        </Link>
+        <Link
+          to="/auth"
+          className="inline-flex rounded-full bg-[var(--earth-green-700)] px-5 py-2 text-sm font-semibold text-[var(--earth-sand-100)] transition hover:bg-[var(--earth-green-900)] sm:px-6 sm:py-2.5 sm:text-base"
+        >
+          Sign In
+        </Link>
+      </nav>
 
-      <section className="relative z-10 mx-auto md:h-[50vh] w-full max-w-7xl flex flex-col items-center justify-end gap-8 px-6 py-10 md:gap-12 md:px-12 md:py-14 lg:gap-16">
+      <section className="relative z-10 mx-auto md:h-[50vh] w-full flex flex-col items-center justify-end gap-8 px-6 py-10 md:gap-12 md:px-12 md:py-14 lg:gap-16">
        
         <p className="mb-4 inline-flex rounded-full border border-[rgba(28,35,16,0.25)] bg-[rgba(245,245,220,0.5)] px-4 py-1 text-xs uppercase tracking-[0.2em] text-[var(--earth-green-700)]">
             Earth Day 2026
           </p>
-        <div className="climate-crisis px-2 text-center text-[clamp(3.1rem,18vw,10.25rem)] leading-[0.85] text-[var(--earth-green-300)]">
+        <div className="climate-crisis  text-center text-[clamp(2.1rem,14vw,10.25rem)] leading-[0.85] text-[var(--earth-green-300)]">
           Plantera
         </div>
       </section>
-        <section className="sticky top-[-50%] z-50 flex justify-center">
+        <section className="sticky top-[-50%] z-20 flex justify-center">
           <RotatingEarth className="relative mx-auto h-[340px] w-full max-w-[34rem] md:h-screen md:max-w-none" modelSize={3.8} cameraDistance={4.4} />
       </section>
       <section>
