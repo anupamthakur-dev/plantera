@@ -47,7 +47,7 @@ export function PlantSidebar({ open, loading, errorMessage, data, onClose }: Pla
   }, [])
 
   return (
-    <aside className="pointer-events-none absolute inset-0 z-20" aria-hidden={!open}>
+    <aside className="pointer-events-none absolute inset-0 z-[80]" aria-hidden={!open}>
       <button
         type="button"
         onClick={onClose}

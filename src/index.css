@@ -143,3 +143,66 @@ body {
 .plantera-modern-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--earth-green-700) 74%, white);
 }
+
+@keyframes planteraStarTwinkle {
+  0% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.48;
+  }
+  100% {
+    opacity: 0.22;
+  }
+}
+
+.plantera-starfield {
+  mix-blend-mode: screen;
+  will-change: opacity;
+  animation: planteraStarTwinkle 10s ease-in-out infinite;
+}
+
+.plantera-starfield-far {
+  background:
+    radial-gradient(circle at 8% 16%, rgba(255, 255, 255, 0.62) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 17% 72%, rgba(255, 255, 255, 0.5) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 27% 30%, rgba(255, 255, 255, 0.58) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 39% 64%, rgba(255, 255, 255, 0.46) 0 0.8px, transparent 1.2px),
+    radial-gradient(circle at 46% 18%, rgba(255, 255, 255, 0.54) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 56% 82%, rgba(255, 255, 255, 0.5) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.6) 0 0.9px, transparent 1.5px),
+    radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.44) 0 0.8px, transparent 1.2px),
+    radial-gradient(circle at 88% 66%, rgba(255, 255, 255, 0.62) 0 0.95px, transparent 1.45px),
+    radial-gradient(circle at 94% 28%, rgba(255, 255, 255, 0.52) 0 0.85px, transparent 1.3px);
+  opacity: 0.34;
+}
+
+.plantera-starfield-near {
+  background:
+    radial-gradient(circle at 13% 22%, color-mix(in srgb, var(--earth-accent-sky) 56%, white) 0 1.35px, transparent 2px),
+    radial-gradient(circle at 23% 82%, rgba(255, 255, 255, 0.82) 0 1.15px, transparent 1.9px),
+    radial-gradient(circle at 34% 41%, color-mix(in srgb, var(--earth-sand-100) 66%, white) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 49% 14%, rgba(255, 255, 255, 0.86) 0 1.18px, transparent 1.9px),
+    radial-gradient(circle at 61% 72%, color-mix(in srgb, var(--earth-accent-clay) 35%, white) 0 1.22px, transparent 2px),
+    radial-gradient(circle at 73% 27%, rgba(255, 255, 255, 0.78) 0 1.15px, transparent 1.9px),
+    radial-gradient(circle at 85% 52%, color-mix(in srgb, var(--earth-accent-moss) 42%, white) 0 1.25px, transparent 2px),
+    radial-gradient(circle at 92% 80%, rgba(255, 255, 255, 0.76) 0 1.15px, transparent 1.9px);
+  opacity: 0.42;
+  animation-duration: 8s;
+}
+
+.plantera-galaxy-shine {
+  background:
+    radial-gradient(420px 220px at 14% 30%, color-mix(in srgb, var(--earth-accent-sky) 46%, transparent) 0%, transparent 72%),
+    radial-gradient(360px 210px at 82% 24%, color-mix(in srgb, var(--earth-accent-clay) 32%, transparent) 0%, transparent 74%),
+    radial-gradient(320px 180px at 63% 78%, color-mix(in srgb, var(--earth-accent-moss) 34%, transparent) 0%, transparent 76%);
+  filter: blur(24px);
+  mix-blend-mode: screen;
+  opacity: 0.28;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plantera-starfield {
+    animation: none;
+  }
+}

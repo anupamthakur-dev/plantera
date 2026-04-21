@@ -4,9 +4,6 @@ const PostModal = lazy(() => import('../../features/post/PostModal'))
 
 export const ModalType = {
   POST_PLANT: 'POST_PLANT',
-  VIEW_POST: 'VIEW_POST',
-  PROFILE: 'PROFILE',
-  SETTINGS: 'SETTINGS',
 } as const
 
 export type ModalType = (typeof ModalType)[keyof typeof ModalType]

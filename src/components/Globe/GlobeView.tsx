@@ -2,6 +2,7 @@ import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, use
 import Globe from 'react-globe.gl'
 import { geoCentroid } from 'd3'
 import { feature as topojsonFeature } from 'topojson-client'
+import { Link } from 'react-router-dom'
 import type { FeatureCollection, Geometry } from 'geojson'
 import { useGlobeZoom } from './useGlobeZoom'
 import { useGlobePlants } from './useGlobePlants'
@@ -14,7 +15,6 @@ import type {
   AreaFeature,
   City,
   GlobeHandle,
-  ZoomLevel,
 } from '../../types/globe'
 
 const COUNTRIES_TOPO_URL =
@@ -50,12 +50,6 @@ function getAreaId(area: AreaFeature | null): string {
   const areaId = (area.id ?? '').toString()
 
   return propertyId || propertyName || areaId
-}
-
-function layerLabelByZoom(zoomLevel: ZoomLevel): string {
-  if (zoomLevel === 'far') return 'Countries'
-  if (zoomLevel === 'medium') return 'States'
-  return 'States + Cities'
 }
 
 function normalizeLng(lng: number): number {
@@ -117,17 +111,25 @@ function GlobeView() {
   const [sidebarData, setSidebarData] = useState<PlantSidebarData | null>(null)
   const sidebarRequestIdRef = useRef(0)
   const isMobilePerformanceMode = useMobilePerformanceMode()
-  const { zoomLevel, altitude, pov } = useGlobeZoom(globeRef, isMobilePerformanceMode)
-  const { user, signOut } = useAuth()
+  const { zoomLevel, pov } = useGlobeZoom(globeRef, isMobilePerformanceMode)
+  const { user } = useAuth()
   const {
-    plants,
     visiblePlants,
     objectThreeObject,
     isPlantModelReady,
-    loadedPlantTypes,
     loadingStatus: plantLoadingStatus,
   } = useGlobePlants({ pov, zoomLevel, isMobilePerformanceMode })
   const deferredZoomLevel = useDeferredValue(zoomLevel)
+  const userAvatarUrl = ((user?.user_metadata?.avatar_url as string | undefined)
+    || (user?.user_metadata?.picture as string | undefined)
+    || '')
+    .trim()
+  const userName = ((user?.user_metadata?.full_name as string | undefined)
+    || (user?.user_metadata?.name as string | undefined)
+    || (user?.user_metadata?.preferred_username as string | undefined)
+    || user?.email?.split('@')[0]
+    || 'Plantera User')
+    .trim()
 
   useEffect(() => {
     const container = containerRef.current
@@ -517,9 +519,46 @@ function GlobeView() {
   const isGlobeReady = countries.length > 0 && isPlantModelReady
 
   return (
-    <section ref={containerRef} className="relative h-full min-h-[320px] w-full overflow-hidden">
+    <section ref={containerRef} className="relative h-full min-h-[320px] w-full overflow-hidden" style={{ background: '#06080d' }}>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(1400px 900px at 55% 48%, #131924 0%, #090d14 48%, #05070b 100%), radial-gradient(900px 520px at 20% 28%, color-mix(in srgb, var(--earth-accent-sky) 50%, black) 0%, transparent 60%), radial-gradient(840px 500px at 84% 16%, color-mix(in srgb, var(--earth-accent-clay) 34%, black) 0%, transparent 62%), radial-gradient(760px 440px at 62% 78%, color-mix(in srgb, var(--earth-accent-moss) 34%, black) 0%, transparent 66%)',
+          opacity: 0.92,
+          filter: 'blur(58px) saturate(118%)',
+          transform: 'scale(1.1)',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(700px 360px at 26% 34%, color-mix(in srgb, var(--earth-accent-sky) 28%, black) 0%, transparent 70%), radial-gradient(680px 320px at 76% 62%, color-mix(in srgb, var(--earth-green-700) 24%, black) 0%, transparent 74%)',
+          mixBlendMode: 'screen',
+          opacity: 0.42,
+          filter: 'blur(22px)',
+          transform: 'translateY(12px) scale(1.04)',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(circle at 20% 25%, rgba(255,255,255,0.08) 0 1px, transparent 1.5px), radial-gradient(circle at 72% 31%, rgba(255,255,255,0.07) 0 1px, transparent 1.6px), radial-gradient(circle at 34% 70%, rgba(255,255,255,0.06) 0 1px, transparent 1.6px), radial-gradient(circle at 83% 78%, rgba(255,255,255,0.06) 0 1px, transparent 1.4px), radial-gradient(circle at 58% 19%, rgba(255,255,255,0.05) 0 1px, transparent 1.5px)',
+          opacity: 0.35,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 34%, rgba(5, 7, 11, 0.42) 70%, rgba(2, 3, 6, 0.75) 100%), linear-gradient(180deg, rgba(7, 10, 16, 0.16) 0%, rgba(5, 7, 12, 0.58) 100%)',
+        }}
+      />
+      <div className="plantera-galaxy-shine pointer-events-none absolute inset-0" />
       {!isGlobeReady ? (
-        <div className="flex h-full items-center justify-center bg-slate-950">
+        <div className="flex h-full items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-400"></div>
             <div className="text-center">
@@ -535,7 +574,7 @@ function GlobeView() {
           width={globeSize.width}
           height={globeSize.height}
           globeImageUrl={SOLID_GLOBE_IMAGE_URL}
-          backgroundColor="#01182900"
+          backgroundColor="#00000000"
           showAtmosphere={!isMobilePerformanceMode}
           atmosphereColor="#67e8f9"
           atmosphereAltitude={isMobilePerformanceMode ? 0.12 : 0.22}
@@ -578,41 +617,34 @@ function GlobeView() {
         </>
       )}
 
-      {isGlobeReady && (
-        <div className="pointer-events-none absolute left-4 top-4 rounded-md border border-zinc-700/80 bg-zinc-900/75 px-4 py-3 text-xs tracking-wide text-zinc-200 shadow-lg shadow-cyan-500/10 backdrop-blur-sm sm:left-6 sm:top-6">
-        <div className="mb-1 font-semibold uppercase text-cyan-300">
-          Plantera Globe
-        </div>
-        <div>Zoom Mode: {zoomLevel}</div>
-        <div>Altitude: {altitude.toFixed(2)}</div>
-        <div>Layer: {layerLabelByZoom(zoomLevel)}</div>
-        <div>Nearby Plants: {plants.length}</div>
-        <div>Visible Plants: {visiblePlants.length}</div>
-        <div>Loaded Plant Types: {loadedPlantTypes.size}</div>
-        <div>Tree Model: {isPlantModelReady ? 'Ready' : 'Loading...'}</div>
-        {plantLoadingStatus ? (
-          <div className="text-amber-300">{plantLoadingStatus}</div>
-        ) : null}
-        {overlayLoadingStatus ? (
-          <div className="text-cyan-300">{overlayLoadingStatus}</div>
-        ) : null}
+      {(overlayLoadingStatus || plantLoadingStatus) && (
+        <div className="pointer-events-none absolute left-4 top-4 text-xs font-medium tracking-wide sm:left-6 sm:top-6">
+          {overlayLoadingStatus && (
+            <div className="text-cyan-400">{overlayLoadingStatus}</div>
+          )}
+          {plantLoadingStatus && (
+            <div className="text-amber-300">{plantLoadingStatus}</div>
+          )}
         </div>
       )}
 
       {isGlobeReady && user && (
-        <div className="absolute right-4 top-4 rounded-md border border-emerald-500/30 bg-emerald-950/70 px-4 py-3 text-xs tracking-wide text-emerald-100 shadow-lg shadow-emerald-500/10 backdrop-blur-sm sm:right-6 sm:top-6">
-          <div className="font-semibold uppercase text-emerald-300">Signed In</div>
-          <div className="mt-1 max-w-[220px] truncate">{user.email}</div>
-          <button
-            type="button"
-            onClick={() => {
-              void signOut()
-            }}
-            className="mt-3 inline-flex rounded-lg border border-emerald-400/30 px-3 py-1.5 font-semibold text-emerald-100 transition hover:bg-emerald-900/80"
-          >
-            Sign out
-          </button>
-        </div>
+        <Link to="/profile" className="group absolute right-4 top-4 z-40 sm:right-6 sm:top-6" aria-label="Open profile">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-[color:color-mix(in_srgb,var(--earth-sand-100)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--earth-green-900)_78%,black)] shadow-[0_10px_30px_rgba(10,14,22,0.45),inset_0_1px_0_rgba(255,255,255,0.2)] ring-1 ring-[color:color-mix(in_srgb,var(--earth-accent-sky)_28%,transparent)] backdrop-blur-md">
+            <img
+              src={userAvatarUrl || DEFAULT_AVATAR_DATA_URI}
+              alt={userName}
+              className="h-full w-full object-cover"
+              onError={(event) => {
+                event.currentTarget.src = DEFAULT_AVATAR_DATA_URI
+              }}
+            />
+          </div>
+          <div className="pointer-events-none absolute right-0 top-[calc(100%+10px)] w-[240px] translate-y-1 rounded-xl border border-[color:color-mix(in_srgb,var(--earth-sand-100)_20%,transparent)] bg-[color:color-mix(in_srgb,var(--earth-stone-900)_58%,black)] px-3 py-2 text-xs text-[var(--earth-sand-100)] opacity-0 shadow-[0_18px_34px_rgba(5,7,12,0.55)] backdrop-blur-xl transition duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            <div className="truncate font-semibold text-[color:color-mix(in_srgb,var(--earth-sand-100)_94%,white)]">{userName}</div>
+            <div className="truncate text-[color:color-mix(in_srgb,var(--earth-sand-100)_72%,var(--earth-stone-300))]">{user.email}</div>
+          </div>
+        </Link>
       )}
     </section>
   )

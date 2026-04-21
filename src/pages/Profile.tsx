@@ -37,7 +37,7 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const { userId: routeUserId } = useParams<{ userId?: string }>()
   const { user, isUser, loading: authLoading } = useUser()
-  const { isSupabaseConfigured } = useAuth()
+  const { isSupabaseConfigured, signOut } = useAuth()
 
   const resolvedUserId = useMemo(() => {
     const fromRoute = routeUserId?.trim()
@@ -46,6 +46,11 @@ export default function ProfilePage() {
   }, [routeUserId, user?.id])
 
   const isOwnProfile = Boolean(user?.id && resolvedUserId && user.id === resolvedUserId)
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/auth', { replace: true })
+  }
 
   const [profileData, setProfileData] = useState<UserProfilePageData | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
@@ -135,39 +140,46 @@ export default function ProfilePage() {
         </div>
 
         <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_20px_50px_rgba(28,35,16,0.12)] md:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <img
-                src={profileData.avatarUrl || DEFAULT_AVATAR_DATA_URI}
-                alt={profileData.name}
-                onError={(event) => {
-                  event.currentTarget.onerror = null
-                  event.currentTarget.src = DEFAULT_AVATAR_DATA_URI
-                }}
-                className="h-20 w-20 rounded-3xl border border-[var(--border)] object-cover"
-              />
+          <div className="text-center">
+            <img
+              src={profileData.avatarUrl || DEFAULT_AVATAR_DATA_URI}
+              alt={profileData.name}
+              onError={(event) => {
+                event.currentTarget.onerror = null
+                event.currentTarget.src = DEFAULT_AVATAR_DATA_URI
+              }}
+              className="mx-auto mb-6 h-28 w-28 rounded-full border-2 border-[color:color-mix(in_srgb,var(--earth-sand-100)_35%,transparent)] shadow-[0_16px_40px_rgba(53,84,39,0.28)] object-cover"
+            />
+
+            <h1 className="text-4xl font-black tracking-tight text-[var(--earth-green-900)] mb-2">
+              {profileData.name}
+            </h1>
+
+            <p className="text-sm text-[var(--text-secondary)] mb-4">{user?.email}</p>
+
+            <div className="mb-6 space-y-1 text-xs text-[var(--text-secondary)]">
               <div>
-                <h1 className="text-2xl font-bold text-[var(--earth-green-900)] md:text-3xl">{profileData.name}</h1>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">@{profileData.userId}</p>
-                <p className="text-xs text-[var(--text-secondary)]">Joined {formatJoinedDate(profileData.joinedAt)}</p>
+                <span className="font-semibold text-[var(--text-primary)]">Member since</span> {formatJoinedDate(profileData.joinedAt)}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--earth-sand-100)] px-3 py-2 text-right">
-                <div className="text-lg font-bold text-[var(--earth-green-900)]">{profileData.postCount}</div>
-                <div className="text-xs text-[var(--text-secondary)]">Plants Posted</div>
-              </div>
-
-              {isOwnProfile ? (
+            {isOwnProfile ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
                 <button
                   type="button"
-                  className="rounded-xl border border-[var(--earth-green-700)] bg-[var(--earth-green-700)] px-4 py-2 text-sm font-semibold text-[var(--earth-sand-100)] transition hover:bg-[var(--earth-green-900)]"
+                  className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--earth-green-300)_0%,var(--earth-green-500)_52%,var(--earth-green-700)_100%)] px-6 py-2.5 text-sm font-semibold text-[var(--earth-sand-100)] shadow-[0_8px_22px_rgba(53,84,39,0.48)] transition hover:shadow-[0_12px_30px_rgba(53,84,39,0.62)]"
                 >
                   Edit Profile
                 </button>
-              ) : null}
-            </div>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="inline-flex items-center justify-center rounded-full border border-[color:color-mix(in_srgb,var(--earth-green-700)_42%,transparent)] bg-[color:color-mix(in_srgb,var(--earth-green-900)_12%,transparent)] px-6 py-2.5 text-sm font-semibold text-[var(--earth-green-600)] transition hover:bg-[color:color-mix(in_srgb,var(--earth-green-700)_18%,transparent)]"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : null}
           </div>
         </section>
 
