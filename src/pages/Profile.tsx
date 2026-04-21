@@ -155,7 +155,7 @@ export default function ProfilePage() {
               {profileData.name}
             </h1>
 
-            <p className="text-sm text-[var(--text-secondary)] mb-4">{user?.email}</p>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">{profileData.email}</p>
 
             <div className="mb-6 space-y-1 text-xs text-[var(--text-secondary)]">
               <div>

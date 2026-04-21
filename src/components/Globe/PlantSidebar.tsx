@@ -105,8 +105,8 @@ export function PlantSidebar({ open, loading, errorMessage, data, onClose }: Pla
                     className="h-12 w-12 rounded-2xl border border-[color:var(--border)] object-cover"
                   />
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{data.user.name}</div>
-                    <div className="truncate text-xs text-[color:var(--text-secondary)]">@{data.user.id}</div>
+                    <div className="truncate text-md font-semibold text-[color:var(--text-primary)]">{data.user.name}</div>
+                 
                   </div>
                 </Link>
               </section>
@@ -116,8 +116,8 @@ export function PlantSidebar({ open, loading, errorMessage, data, onClose }: Pla
                 <div className="mb-2 text-lg font-bold text-[color:var(--text-primary)]">{data.plant.name}</div>
                 <div className="mb-2 text-xs text-[color:var(--text-secondary)]">Type: {data.plant.type}</div>
                 <div className="mb-2 text-xs text-[color:var(--text-secondary)]">Planted on: {formatPlantDate(data.plant.plantedAt)}</div>
-                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--earth-sand-100)] px-3 py-2 text-sm leading-relaxed text-[color:var(--text-primary)]">
-                  {data.plant.quote?.trim() || 'No quote shared for this plant yet.'}
+                <div className="rounded-xl bg-gray-100/50 px-3 py-2 text-sm italic leading-relaxed text-[color:var(--text-primary)]">
+                  {data.plant.quote?.trim() ? `" ${data.plant.quote?.trim()} "`:'No quote shared for this plant yet.'}
                 </div>
               </section>
 
@@ -167,7 +167,6 @@ export function PlantSidebar({ open, loading, errorMessage, data, onClose }: Pla
                         />
                         <div className="min-w-0">
                           <div className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{regionalUser.name}</div>
-                          <div className="text-xs text-[color:var(--text-secondary)]">@{regionalUser.id}</div>
                           <div className="text-[11px] text-[color:var(--earth-green-700)]">
                             {regionalUser.plantCountInRegion} plant{regionalUser.plantCountInRegion > 1 ? 's' : ''} nearby
                           </div>

@@ -19,6 +19,7 @@ type ProfileRow = {
   avatar_url?: string | null
   full_name?: string | null
   created_at?: string | null
+  email?:string | null
 }
 
 type PlantImageRow = {
@@ -67,6 +68,7 @@ export type UserProfilePlantPost = {
 
 export type UserProfilePageData = {
   userId: string
+  email:string
   name: string
   avatarUrl: string | null
   joinedAt: number | null
@@ -166,7 +168,7 @@ async function fetchPlantImagesByIds(plantIds: string[]): Promise<Map<string, st
 async function fetchUserProfile(userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,full_name,avatar_url,created_at')
+    .select('id,full_name,avatar_url,created_at,email')
     .eq('id', userId)
     .maybeSingle()
 
@@ -411,6 +413,7 @@ export async function fetchUserProfilePageData(userId: string): Promise<UserProf
   return {
     userId: normalizedUserId,
     name: profile?.full_name?.trim() || normalizedUserId,
+    email:profile?.email || "",
     avatarUrl: profile?.avatar_url || null,
     joinedAt: toTimestamp(profile?.created_at),
     postCount: normalizedPlants.length,
