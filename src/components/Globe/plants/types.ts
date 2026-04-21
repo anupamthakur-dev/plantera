@@ -1,4 +1,4 @@
-export type PlantType = 'tree' | 'bush' | 'grass' | 'flower' | 'desert'
+export type PlantType = 'tree' | 'bush' | 'flower' | 'desert'
 
 export interface PlantedPlant {
   id: string

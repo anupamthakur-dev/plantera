@@ -79,7 +79,7 @@ export type UserProfilePageData = {
 let isProfilesAvatarLookupAvailable = true
 
 function isPlantType(type: string): type is PlantType {
-  return type === 'tree' || type === 'bush' || type === 'grass' || type === 'flower' || type === 'desert'
+  return type === 'tree' || type === 'bush' || type === 'flower' || type === 'desert'
 }
 
 function normalizePlantRow(row: PlantTableRow): PlantedPlant {

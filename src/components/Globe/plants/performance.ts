@@ -55,7 +55,6 @@ export function groupPlantsByType(plants: PlantedPlant[]): GroupedPlantsByType {
   const grouped: GroupedPlantsByType = {
     tree: [],
     bush: [],
-    grass: [],
     flower: [],
     desert: [],
   }

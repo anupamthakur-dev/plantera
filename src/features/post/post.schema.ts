@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { PlantType } from '../../components/Globe/plants'
 
-const plantTypeValues = ['tree', 'bush', 'grass', 'flower', 'desert'] as const satisfies readonly PlantType[]
+const plantTypeValues = ['tree', 'bush', 'flower', 'desert'] as const satisfies readonly PlantType[]
 
 function isFileList(value: unknown): value is FileList {
   return typeof FileList !== 'undefined' && value instanceof FileList
