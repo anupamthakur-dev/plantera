@@ -20,7 +20,7 @@ const imageFileSchema = z
     'Each image must be 5 MB or smaller.',
   )
 
-export const plantPostSchema = z.object({
+const plantPostFormBaseSchema = z.object({
   name: z.string().trim().min(2, 'Plant name is required.').max(80, 'Plant name is too long.'),
   type: z.enum(plantTypeValues),
   lat: z.coerce.number().finite('Latitude must be a valid number.').min(-90, 'Latitude must be between -90 and 90.').max(90, 'Latitude must be between -90 and 90.'),
@@ -32,8 +32,16 @@ export const plantPostSchema = z.object({
     .max(240, 'Quote must be 240 characters or fewer.')
     .optional()
     .or(z.literal('')),
+})
+
+export const plantPostCreateSchema = plantPostFormBaseSchema.extend({
   images: imageFileSchema,
 })
 
-export type PlantPostFormValues = z.infer<typeof plantPostSchema>
+export const plantPostUpdateSchema = plantPostFormBaseSchema.extend({
+  images: z.unknown().optional(),
+})
+
+export type PlantPostFormValues = z.infer<typeof plantPostCreateSchema>
+export type PlantPostUpdateFormValues = z.infer<typeof plantPostUpdateSchema>
 export const plantTypeOptions = plantTypeValues

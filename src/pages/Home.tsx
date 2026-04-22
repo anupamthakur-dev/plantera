@@ -1,8 +1,6 @@
 import GlobeView from '../components/Globe/GlobeView'
 import LandingPage from './LandingPage'
 import { useUser } from '../features/auth'
-import { ModalProvider } from '../components/ui/ModalProvider'
-import UIOverlay from '../components/ui/UIOverlay'
 
 function Home() {
   const { isUser, loading } = useUser()
@@ -17,12 +15,9 @@ function Home() {
 
   if (isUser) {
     return (
-      <ModalProvider>
-        <main className="relative h-screen w-screen overflow-hidden bg-[var(--background)] text-zinc-100">
-          <GlobeView />
-          <UIOverlay />
-        </main>
-      </ModalProvider>
+      <main className="relative h-screen w-screen overflow-hidden bg-[var(--background)] text-zinc-100">
+        <GlobeView />
+      </main>
     )
   }
 

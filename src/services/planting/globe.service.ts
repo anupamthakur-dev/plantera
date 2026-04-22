@@ -64,6 +64,7 @@ export type UserProfilePlantPost = {
   lat: number
   lng: number
   imageUrl: string | null
+  imageUrls: string[]
 }
 
 export type UserProfilePageData = {
@@ -74,6 +75,23 @@ export type UserProfilePageData = {
   joinedAt: number | null
   postCount: number
   posts: UserProfilePlantPost[]
+}
+
+export type PlantPostDetails = {
+  id: string
+  name: string
+  type: PlantType
+  quote: string | null
+  plantedAt: number
+  lat: number
+  lng: number
+  imageUrls: string[]
+  user: {
+    id: string
+    name: string
+    avatarUrl: string | null
+    email: string
+  }
 }
 
 let isProfilesAvatarLookupAvailable = true
@@ -426,6 +444,52 @@ export async function fetchUserProfilePageData(userId: string): Promise<UserProf
       lat: plant.lat,
       lng: plant.lng,
       imageUrl: (imagesByPlantId.get(plant.id) ?? [])[0] ?? null,
+      imageUrls: imagesByPlantId.get(plant.id) ?? [],
     })),
+  }
+}
+
+export async function fetchPlantPostDetailsById(plantId: string): Promise<PlantPostDetails | null> {
+  if (!isSupabaseConfigured || !plantId.trim()) {
+    return null
+  }
+
+  const normalizedPlantId = plantId.trim()
+
+  const { data: plantData, error: plantError } = await supabase
+    .from('plants_planted')
+    .select('*')
+    .eq('id', normalizedPlantId)
+    .maybeSingle()
+
+  if (plantError) {
+    throw plantError
+  }
+
+  if (!plantData) {
+    return null
+  }
+
+  const normalizedPlant = normalizePlantRow(plantData as PlantTableRow)
+  const [profile, imagesByPlantId] = await Promise.all([
+    fetchUserProfile(normalizedPlant.userId),
+    fetchPlantImagesByIds([normalizedPlant.id]),
+  ])
+
+  return {
+    id: normalizedPlant.id,
+    name: normalizedPlant.name,
+    type: normalizedPlant.type,
+    quote: normalizedPlant.quote ?? null,
+    plantedAt: normalizedPlant.plantedAt,
+    lat: normalizedPlant.lat,
+    lng: normalizedPlant.lng,
+    imageUrls: imagesByPlantId.get(normalizedPlant.id) ?? [],
+    user: {
+      id: normalizedPlant.userId,
+      name: profile?.full_name?.trim() || normalizedPlant.userId,
+      avatarUrl: profile?.avatar_url || null,
+      email: profile?.email || '',
+    },
   }
 }
