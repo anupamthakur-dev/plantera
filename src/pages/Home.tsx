@@ -1,6 +1,7 @@
 import GlobeView from '../components/Globe/GlobeView'
 import LandingPage from './LandingPage'
 import { useUser } from '../features/auth'
+import UIOverlay from '../components/ui/UIOverlay'
 
 function Home() {
   const { isUser, loading } = useUser()
@@ -17,6 +18,7 @@ function Home() {
     return (
       <main className="relative h-screen w-screen overflow-hidden bg-[var(--background)] text-zinc-100">
         <GlobeView />
+        <UIOverlay/>
       </main>
     )
   }
